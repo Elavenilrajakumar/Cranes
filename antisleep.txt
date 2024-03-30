@@ -1,0 +1,65 @@
+// Include necessary libraries
+#include <Arduino.h>
+
+// Define pin numbers for components
+#define EYE_BLINK_SENSOR_PIN A0
+#define PIEZO_BUZZER_PIN 8
+#define VIBRATION_MOTOR_PIN 9
+#define SWITCH_PIN 7
+
+// Define threshold for detecting drowsiness (adjust as needed)
+#define BLINK_THRESHOLD 500
+
+// Define state variables
+bool isAsleep = false;
+
+void setup() {
+  // Initialize components
+  pinMode(EYE_BLINK_SENSOR_PIN, INPUT);
+  pinMode(PIEZO_BUZZER_PIN, OUTPUT);
+  pinMode(VIBRATION_MOTOR_PIN, OUTPUT);
+  pinMode(SWITCH_PIN, INPUT_PULLUP); // Using internal pull-up resistor
+
+  // Attach interrupt for switch
+  attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), toggleAlarm, CHANGE);
+}
+
+void loop() {
+  // Check if the alarm is enabled
+  if (digitalRead(SWITCH_PIN) == LOW) {
+    // Check if the driver is asleep
+    if (isAsleep) {
+      activateAlarm();
+    } else {
+      deactivateAlarm();
+    }
+  } else {
+    // If the alarm is disabled, ensure it's turned off
+    deactivateAlarm();
+  }
+}
+
+// Function to toggle alarm state
+void toggleAlarm() {
+  isAsleep = !isAsleep;
+}
+
+// Function to activate alarm
+void activateAlarm() {
+  // Check if driver is still asleep
+  int blinkDuration = analogRead(EYE_BLINK_SENSOR_PIN);
+  if (blinkDuration > BLINK_THRESHOLD) {
+    // Driver is asleep, activate alarm
+    digitalWrite(PIEZO_BUZZER_PIN, HIGH);
+    digitalWrite(VIBRATION_MOTOR_PIN, HIGH);
+  } else {
+    // Driver has woken up, deactivate alarm
+    deactivateAlarm();
+  }
+}
+
+// Function to deactivate alarm
+void deactivateAlarm() {
+  digitalWrite(PIEZO_BUZZER_PIN, LOW);
+  digitalWrite(VIBRATION_MOTOR_PIN, LOW);
+}
